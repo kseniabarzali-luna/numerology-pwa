@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Нумерология — вход</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background:#0b0f17; color:#fff; }
+    .wrap { max-width: 420px; margin: 0 auto; padding: 28px 16px; }
+    .card { background:#121a2a; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px; }
+    h1 { font-size: 20px; margin:0 0 10px; }
+    p { opacity:.85; line-height:1.35; margin: 8px 0 14px; }
+    input { width:100%; box-sizing:border-box; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:#0b1220; color:#fff; }
+    button { width:100%; padding:12px; margin-top:10px; border-radius:12px; border:0; background:#4f7cff; color:#fff; font-weight:600; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .row { display:flex; gap:10px; }
+    .row > * { flex:1; }
+    .hint { font-size: 12px; opacity:.75; margin-top:10px; }
+    .msg { margin-top:12px; padding:10px 12px; border-radius:12px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); }
+    .ok { border-color: rgba(79,124,255,.5); }
+    .err { border-color: rgba(255,99,99,.5); }
+    a { color:#9bb6ff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Вход по e-mail</h1>
+      <p>Введите e-mail. Мы отправим код (OTP). После входа появится чат и ваши PDF-отчёты.</p>
+
+      <div id="stepEmail">
+        <input id="email" type="email" placeholder="you@example.com" autocomplete="email"/>
+        <button id="sendOtp">Получить код</button>
+        <div class="hint">Если письма нет — проверь “Спам”.</div>
+      </div>
+
+      <div id="stepOtp" style="display:none; margin-top:14px;">
+        <div class="row">
+          <input id="otp" inputmode="numeric" placeholder="Код из письма"/>
+          <button id="verifyOtp">Войти</button>
+        </div>
+        <button id="back" style="background:#27324b;">Назад</button>
+      </div>
+
+      <div id="authed" style="display:none; margin-top:14px;">
+        <div class="msg ok">Вы вошли ✅</div>
+        <p class="hint">Дальше мы добавим чат и оплату. Пока можно выйти.</p>
+        <button id="logout" style="background:#27324b;">Выйти</button>
+      </div>
+
+      <div id="msg" class="msg" style="display:none;"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SUPABASE_URL = "https://wceramzbrsvlyemngqye.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZXJhbXpicnN2bHllbW5ncXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDgxNzUsImV4cCI6MjA4NjQ4NDE3NX0.vIpHdkuyLEJYtg-FYjd-zfDarXkjgFILpKJyi9Sc2zs";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id) => document.getElementById(id);
+    const showMsg = (text, type="ok") => {
+      const m = el("msg");
+      m.style.display = "block";
+      m.textContent = text;
+      m.className = "msg " + (type === "err" ? "err" : "ok");
+    };
+
+    const setUI = async () => {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+
+      el("msg").style.display = "none";
+      el("stepEmail").style.display = session ? "none" : "block";
+      el("stepOtp").style.display = "none";
+      el("authed").style.display = session ? "block" : "none";
+    };
+
+    await setUI();
+
+    el("sendOtp").onclick = async () => {
+      const email = el("email").value.trim();
+      if (!email) return showMsg("Введите e-mail", "err");
+
+      el("sendOtp").disabled = true;
+      try {
+        const { error } = await supabase.auth.signInWithOtp({ email });
+        if (error) throw error;
+        showMsg("Код отправлен на e-mail. Введите его ниже.", "ok");
+        el("stepEmail").style.display = "none";
+        el("stepOtp").style.display = "block";
+      } catch (e) {
+        showMsg("Ошибка отправки кода: " + (e?.message || e), "err");
+      } finally {
+        el("sendOtp").disabled = false;
+      }
+    };
+
+    el("verifyOtp").onclick = async () => {
+      const email = el("email").value.trim();
+      const token = el("otp").value.trim();
+      if (!email || !token) return showMsg("Введите e-mail и код", "err");
+
+      el("verifyOtp").disabled = true;
+      try {
+        const { error } = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: "email"
+        });
+        if (error) throw error;
+        await setUI();
+      } catch (e) {
+        showMsg("Ошибка входа: " + (e?.message || e), "err");
+      } finally {
+        el("verifyOtp").disabled = false;
+      }
+    };
+
+    el("back").onclick = async () => {
+      el("stepOtp").style.display = "none";
+      el("stepEmail").style.display = "block";
+      el("msg").style.display = "none";
+    };
+
+    el("logout").onclick = async () => {
+      await supabase.auth.signOut();
+      await setUI();
+    };
+
+    supabase.auth.onAuthStateChange(() => setUI());
+  </script>
+</body>
+</html>
