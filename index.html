@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LunaMatrix — Нумеролог-эксперт</title>
-  <meta name="description" content="Персональные демо-ответы и консультации по нумерологии. PDF — печать в браузере." />
+  <meta name="description" content="Персональные демо-ответы и консультации по нумерологии. PDF — через Печать → Сохранить как PDF." />
   <style>
     :root{
       --bg0:#070A12;
@@ -25,7 +25,7 @@
     html,body{height:100%}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue";
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
       color:var(--text);
       background:
         radial-gradient(1200px 800px at 70% -10%, rgba(107,140,255,.25), transparent 60%),
@@ -57,6 +57,7 @@
       padding:22px 22px 18px;
       position:relative;
       overflow:hidden;
+      min-height: 560px;
     }
     .hero:before{
       content:"";
@@ -85,6 +86,7 @@
     .title{line-height:1.1}
     .title h1{margin:0; font-size:20px; letter-spacing:.2px}
     .title p{margin:4px 0 0; color:var(--muted); font-size:13px}
+
     .chips{
       display:flex; flex-wrap:wrap; gap:8px;
       margin:14px 0 0;
@@ -98,6 +100,11 @@
       font-size:12px;
     }
 
+    .right{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
     .chat{
       border:1px solid rgba(255,255,255,.07);
       background: rgba(14,22,48,.45);
@@ -161,6 +168,8 @@
       white-space:pre-wrap;
       line-height:1.35;
       font-size:14px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
     .row.bot .bubble{
       background: rgba(14,22,48,.70);
@@ -173,6 +182,7 @@
     .meta{
       font-size:11px; color:rgba(170,182,218,.75);
       margin:0 4px;
+      white-space:nowrap;
     }
     .typing{
       display:inline-flex; align-items:center; gap:6px;
@@ -250,17 +260,7 @@
       background: rgba(107,140,255,.20);
       border-color: rgba(107,140,255,.35);
     }
-    .small{
-      font-size:12px;
-      color:rgba(170,182,218,.78);
-      margin-top:10px;
-      line-height:1.35;
-    }
-    .right{
-      display:flex;
-      flex-direction:column;
-      gap:18px;
-    }
+
     .card{
       border:1px solid rgba(255,255,255,.07);
       background: rgba(14,22,48,.35);
@@ -280,6 +280,12 @@
       font-size:12px;
       line-height:1.35;
     }
+    .small{
+      font-size:12px;
+      color:rgba(170,182,218,.78);
+      margin-top:10px;
+      line-height:1.35;
+    }
   </style>
 </head>
 <body>
@@ -290,7 +296,7 @@
         <div class="logo"><span>🌙</span></div>
         <div class="title">
           <h1>Нумеролог-эксперт LunaMatrix</h1>
-          <p>Демо бесплатно. Текст/ PDF — прямо на сайте.</p>
+          <p>Демо бесплатно. Консультации: текст / PDF.</p>
         </div>
       </div>
 
@@ -308,7 +314,7 @@
     </div>
 
     <div class="right">
-      <div class="chat" id="chat">
+      <div class="chat">
         <div class="chat-head">
           <div class="status">
             <span class="dot"></span>
@@ -331,9 +337,9 @@
 
       <div class="card">
         <h3>Важно</h3>
-        <p>Текст консультации генерируется через <code>/service</code>. PDF делаем через “Печать → Сохранить как PDF” (идеальная кириллица).</p>
+        <p>Текст консультации — через <code>/service</code>. PDF делаем через <b>Печать → Сохранить как PDF</b> (кириллица идеальная). На шаблон можно поставить фон страницы.</p>
         <div class="warn">
-          Если открыть <code>/demo</code>/<code>/service</code> в браузере — это GET и будет “Not found”. Используем POST с сайта.
+          Если открыть <code>/demo</code> в браузере — это GET и будет “Not found”. Демо работает POST-запросом из сайта.
         </div>
       </div>
     </div>
@@ -342,18 +348,20 @@
 
 <script>
   // === Настройка ===
-  const API_BASE = "https://numerology-api.kseniabarzali.workers.dev"; // проверь домен
+  const API_BASE = "https://numerology-api.kseniabarzali.workers.dev"; // <-- ПРОВЕРЬ: это твой воркер
+  const TEMPLATE_BG = "./template-page1.png"; // <-- сюда положишь картинку-шаблон (PNG/JPG). Если нет — оставь пусто: ""
 
   // === Состояние ===
-  const STORAGE_KEY = "lunamatrix_state_v3";
+  const STORAGE_KEY = "lunamatrix_state_v2";
   const State = {
     stage: "ASK_NAME",
     name: "",
     birthdate: "",
-    service: "", // prognostics | compatibility | realization | full
-    format: "",  // text | pdf
+    service: "",     // prognostics | compatibility | realization | full
+    format: "",      // text | pdf
     year: "",
     partner_birthdate: "",
+    email: ""
   };
 
   const elMessages = document.getElementById("messages");
@@ -372,29 +380,26 @@
       return {...State};
     }
   }
-  function saveState(s){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  }
+  function saveState(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
   let state = loadState();
 
-  function setStatus(){
-    elStatus.textContent = state.name ? state.name : "Гость";
-  }
+  function setStatus(){ elStatus.textContent = state.name ? state.name : "Гость"; }
 
   function timeStr(){
     const d = new Date();
     return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
   }
 
-  function addRow(who, text, meta=true){
+  function addRow(who, text, showTime=true){
     const row = document.createElement("div");
     row.className = "row " + (who === "user" ? "user" : "bot");
+
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.textContent = text;
+    bubble.textContent = String(text || "");
     row.appendChild(bubble);
 
-    if(meta){
+    if(showTime){
       const m = document.createElement("div");
       m.className = "meta";
       m.textContent = timeStr();
@@ -411,10 +416,7 @@
     row.dataset.typing = "1";
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    const t = document.createElement("span");
-    t.className = "typing";
-    t.innerHTML = "<i></i><i></i><i></i>";
-    bubble.appendChild(t);
+    bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
     row.appendChild(bubble);
     elMessages.appendChild(row);
     elMessages.scrollTop = elMessages.scrollHeight;
@@ -452,86 +454,30 @@
     return m ? `${m[1]}.${m[2]}.${m[3]}` : "";
   }
   function normalizeYear(x){
-    const m = (x || "").trim().match(/^(20\d{2}|19\d{2})$/);
+    const m = (x || "").trim().match(/^(\d{4})$/);
     return m ? m[1] : "";
+  }
+  function isEmail(x){
+    const e = String(x||"").trim().toLowerCase();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : "";
   }
 
   function serviceLabel(svc){
-    if(svc === "prognostics") return "Прогностика";
-    if(svc === "compatibility") return "Совместимость";
-    if(svc === "realization") return "Деньги / Реализация / Профессии";
-    if(svc === "full") return "Полный пакет (всё сразу)";
-    return svc || "";
+    if(svc==="prognostics") return "Прогностика";
+    if(svc==="compatibility") return "Совместимость";
+    if(svc==="realization") return "Деньги / Реализация / Профессии";
+    if(svc==="full") return "Полный пакет";
+    return "Услуга";
   }
 
   async function postJson(path, payload){
-    const resp = await fetch(`${API_BASE}${path}`, {
+    const r = await fetch(API_BASE + path, {
       method: "POST",
       headers: { "content-type":"application/json" },
       body: JSON.stringify(payload)
     });
-    const data = await resp.json().catch(()=> ({}));
-    return { ok: resp.ok, status: resp.status, data };
-  }
-
-  function escapeHtml(s){
-    return String(s || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function openPrintWindow({ title, subtitle, text }){
-    const w = window.open("", "_blank");
-    if(!w){
-      alert("Браузер заблокировал окно. Разреши pop-up и нажми PDF ещё раз.");
-      return;
-    }
-    const html = `
-<!doctype html>
-<html lang="ru">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${escapeHtml(title)}</title>
-<style>
-  @page { size: A4; margin: 18mm; }
-  body{ font-family: Arial, "Noto Sans", "Segoe UI", system-ui, sans-serif; color:#111; }
-  h1{ margin:0 0 6px; font-size:18pt; }
-  .sub{ color:#444; margin:0 0 14px; font-size:11pt; }
-  .box{ border:1px solid #ddd; border-radius:10px; padding:12px 12px; }
-  pre{
-    margin:0;
-    white-space:pre-wrap;
-    word-wrap:break-word;
-    font-size:11pt;
-    line-height:1.35;
-    font-family: Arial, "Noto Sans", "Segoe UI", system-ui, sans-serif;
-  }
-  .foot{ margin-top:12px; font-size:9.5pt; color:#666; }
-  @media print{
-    .noprint{ display:none; }
-  }
-</style>
-</head>
-<body>
-  <h1>${escapeHtml(title)}</h1>
-  <p class="sub">${escapeHtml(subtitle)}</p>
-  <div class="box"><pre>${escapeHtml(text)}</pre></div>
-  <div class="foot">LunaMatrix • сформировано автоматически</div>
-  <div class="noprint" style="margin-top:16px; color:#666; font-size:10pt;">
-    Если окно печати не открылось — нажми Ctrl+P (или ⌘P на Mac).
-  </div>
-<script>
-  setTimeout(()=>{ window.print(); }, 350);
-</script>
-</body>
-</html>`;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
+    const data = await r.json().catch(()=> ({}));
+    return { ok: r.ok, status: r.status, data };
   }
 
   // === flow ===
@@ -547,7 +493,9 @@
       return;
     }
 
-    addRow("bot", `Привет ✨🌙✨ Я твой помощник LunaMatrix 💖\nКак я могу к тебе обращаться?`);
+    addRow("bot",
+`Привет ✨🌙✨ Я помощник LunaMatrix 💖
+Как я могу к тебе обращаться?`);
     state.stage = "ASK_NAME";
     saveState(state);
     setStatus();
@@ -558,8 +506,8 @@
     await sleep(350);
 
     const r = await postJson("/demo", { name: state.name, birthdate: state.birthdate });
-    removeTyping();
 
+    removeTyping();
     if(!r.ok){
       addRow("bot", `Не смогла получить демо 😔\nОшибка: ${r.data?.error || "unknown"}`);
       return;
@@ -584,7 +532,7 @@
   function showFormatButtons(){
     addActions([
       { label:"💬 Текст в чате", onClick:()=>chooseFormat("text") },
-      { label:"📄 PDF", primary:true, onClick:()=>chooseFormat("pdf") },
+      { label:"📄 PDF (печать)", primary:true, onClick:()=>chooseFormat("pdf") },
     ]);
   }
 
@@ -593,6 +541,7 @@
     state.format = "";
     state.year = "";
     state.partner_birthdate = "";
+    state.email = "";
     saveState(state);
 
     addRow("bot", `Выбрано: ${serviceLabel(svc)}.\nКак удобнее получить результат?`, false);
@@ -602,15 +551,17 @@
   }
 
   function chooseFormat(fmt){
-    state.format = fmt; // text | pdf
+    state.format = fmt;
     saveState(state);
 
+    // собираем доп. данные по услуге:
     if(state.service === "prognostics"){
       addRow("bot", "Для прогностики укажи год (например 2026)");
       state.stage = "ASK_YEAR";
       saveState(state);
       return;
     }
+
     if(state.service === "compatibility"){
       addRow("bot", "Для совместимости нужна дата партнёра — строго ДД.ММ.ГГГГ (например 30.05.1990)");
       state.stage = "ASK_PARTNER_BIRTHDATE";
@@ -618,6 +569,7 @@
       return;
     }
 
+    // realization / full — доп. данных не надо (пока)
     runServiceNow();
   }
 
@@ -629,13 +581,14 @@
       service: state.service,
       name: state.name,
       birthdate: state.birthdate,
+      format: "text"
     };
     if(state.service === "prognostics") payload.year = state.year;
     if(state.service === "compatibility") payload.partner_birthdate = state.partner_birthdate;
 
     const r = await postJson("/service", payload);
-    removeTyping();
 
+    removeTyping();
     if(!r.ok){
       addRow("bot", `Ошибка /service 😔\n${r.data?.error || "unknown"}`);
       state.stage = "CHOOSE_SERVICE";
@@ -646,7 +599,7 @@
 
     const text = r.data?.text || "";
     if(!text){
-      addRow("bot", "Пустой ответ. Попробуй ещё раз.");
+      addRow("bot", "Пустой ответ. Попробуй ещё раз 🙏");
       return;
     }
 
@@ -659,44 +612,107 @@
     }
 
     // PDF через печать
-    const title =
-      state.service === "prognostics"
-        ? `Прогностика ${state.year} — ${state.name}`
-        : state.service === "compatibility"
-          ? `Совместимость — ${state.name}`
-          : state.service === "realization"
-            ? `Деньги / Реализация / Профессии — ${state.name}`
-            : `Полный пакет — ${state.name}`;
+    openPrintWindow({
+      title: `${serviceLabel(state.service)}${state.service==="prognostics" ? " на " + state.year : ""}`,
+      subtitle: `${state.name} • ${state.birthdate}${state.service==="compatibility" ? " • партнёр: " + state.partner_birthdate : ""}`,
+      body: text
+    });
 
-    const subtitle =
-      `Дата рождения: ${state.birthdate}` +
-      (state.service === "compatibility" ? ` • Партнёр: ${state.partner_birthdate}` : "") +
-      (state.service === "prognostics" ? ` • Год: ${state.year}` : "");
-
-    addRow("bot", "Открываю окно PDF… (если браузер блокирует — разреши pop-up)");
-    openPrintWindow({ title, subtitle, text });
-
+    addRow("bot", "Открыла окно для печати. Нажми Ctrl+P → Сохранить как PDF ✅");
     state.stage = "CHOOSE_SERVICE";
     saveState(state);
     showServiceButtons();
   }
 
-  async function handleUserText(text){
-    const msg = (text || "").trim();
-    if(!msg) return;
+  function escapeHtml(s){
+    return String(s||"")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;");
+  }
 
+  function openPrintWindow({title, subtitle, body}){
+    const w = window.open("", "_blank");
+    if(!w){
+      addRow("bot", "Браузер заблокировал окно PDF. Разреши pop-up и нажми PDF ещё раз.");
+      return;
+    }
+
+    const bgCss = TEMPLATE_BG ? `
+      .page{
+        background-image: url('${TEMPLATE_BG}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      /* если твой шаблон светлый — текст делаем тёмным: */
+      .page{ color:#111; }
+      .muted{ color:#333; opacity:.85; }
+      .box{ background: rgba(255,255,255,.78); border: 1px solid rgba(0,0,0,.10); }
+    ` : `
+      .page{ background:#fff; color:#111; }
+      .muted{ color:#333; opacity:.85; }
+      .box{ background:#fff; border: 1px solid rgba(0,0,0,.10); }
+    `;
+
+    // разбиваем текст на абзацы
+    const paragraphs = escapeHtml(body).split("\\n").map(p => p.trim()).filter(Boolean);
+    const contentHtml = paragraphs.map(p => `<p>${p}</p>`).join("");
+
+    const html = `<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(title)}</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  body{ margin:0; font-family: Arial, "Noto Sans", sans-serif; }
+  .page{
+    min-height: 297mm;
+    padding: 0;
+  }
+  .box{
+    border-radius: 12px;
+    padding: 14mm;
+    margin: 0;
+  }
+  h1{ margin:0 0 6mm; font-size: 18pt; }
+  .muted{ font-size: 10.5pt; margin:0 0 10mm; }
+  p{ margin: 0 0 4mm; font-size: 11.5pt; line-height: 1.45; }
+  ${bgCss}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="box">
+      <h1>${escapeHtml(title)}</h1>
+      <div class="muted">${escapeHtml(subtitle)}</div>
+      ${contentHtml}
+    </div>
+  </div>
+<script>
+  // авто-открытие печати можно включить, если хочешь:
+  // setTimeout(()=>window.print(), 300);
+</script>
+</body>
+</html>`;
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  async function handleUserText(text){
+    const msg = String(text||"").trim();
+    if(!msg) return;
     addRow("user", msg);
 
     if(state.stage === "ASK_NAME"){
       state.name = msg.split(/\s+/)[0].slice(0, 24);
       saveState(state);
       setStatus();
-
-      addTyping();
-      await sleep(200);
-      removeTyping();
-
-      addRow("bot", `Приятно познакомиться, ${state.name}! 💫\nНапиши дату рождения ДД.ММ.ГГГГ (например, 20.08.1989)`);
+      addRow("bot", `Приятно познакомиться, ${state.name}! 💫\nНапиши дату рождения ДД.ММ.ГГГГ (например 20.08.1989)`);
       state.stage = "ASK_BIRTHDATE";
       saveState(state);
       return;
@@ -704,10 +720,7 @@
 
     if(state.stage === "ASK_BIRTHDATE"){
       const bd = normalizeBirthdate(msg);
-      if(!bd){
-        addRow("bot", "Дата строго ДД.ММ.ГГГГ, например 20.08.1989");
-        return;
-      }
+      if(!bd){ addRow("bot", "Дата строго ДД.ММ.ГГГГ, например 20.08.1989"); return; }
       state.birthdate = bd;
       saveState(state);
       await runDemo();
@@ -716,10 +729,7 @@
 
     if(state.stage === "ASK_YEAR"){
       const y = normalizeYear(msg);
-      if(!y){
-        addRow("bot", "Год — 4 цифры, например 2026");
-        return;
-      }
+      if(!y){ addRow("bot", "Год — 4 цифры, например 2026"); return; }
       state.year = y;
       saveState(state);
       await runServiceNow();
@@ -728,22 +738,21 @@
 
     if(state.stage === "ASK_PARTNER_BIRTHDATE"){
       const pbd = normalizeBirthdate(msg);
-      if(!pbd){
-        addRow("bot", "Дата партнёра строго ДД.ММ.ГГГГ, например 30.05.1990");
-        return;
-      }
+      if(!pbd){ addRow("bot", "Дата партнёра строго ДД.ММ.ГГГГ, например 30.05.1990"); return; }
       state.partner_birthdate = pbd;
       saveState(state);
       await runServiceNow();
       return;
     }
 
+    // иначе: мягко возвращаем к кнопкам
     addRow("bot", "Давай по кнопкам 🙂 Выбери консультацию ниже.");
-    showServiceButtons();
     state.stage = "CHOOSE_SERVICE";
     saveState(state);
+    showServiceButtons();
   }
 
+  // === events ===
   elSend.addEventListener("click", ()=>{
     const v = elInput.value;
     elInput.value = "";
