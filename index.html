@@ -82,7 +82,9 @@
       border:1px solid rgba(255,255,255,.14);
     }
     .logo span{font-size:22px; transform: translateY(-1px)}
-    .title{ line-height:1.1; }
+    .title{
+      line-height:1.1;
+    }
     .title h1{margin:0; font-size:20px; letter-spacing:.2px}
     .title p{margin:4px 0 0; color:var(--muted); font-size:13px}
     .chips{
@@ -229,6 +231,13 @@
     }
     .btn:hover{border-color:rgba(107,140,255,.55); background: rgba(107,140,255,.26)}
     .btn:disabled{opacity:.55; cursor:not-allowed}
+    .btn.secondary{
+      background: rgba(0,0,0,.12);
+    }
+    .btn.secondary:hover{
+      border-color:rgba(255,255,255,.20);
+      background: rgba(0,0,0,.20);
+    }
     .actions{
       display:flex;
       flex-wrap:wrap;
@@ -280,7 +289,6 @@
       font-size:12px;
       line-height:1.35;
     }
-    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
   </style>
 </head>
 <body>
@@ -298,13 +306,13 @@
       <div class="chips">
         <div class="chip">✨ Персональный демо-ответ</div>
         <div class="chip">💞 Совместимость</div>
-        <div class="chip">🧭 Реализация / Профессии</div>
+        <div class="chip">🤑 Деньги / Реализация / Профессии</div>
         <div class="chip">🔮 Прогностика</div>
         <div class="chip">🔥 Полный пакет</div>
       </div>
 
       <div class="small">
-        Сценарий: имя → дата рождения → демо → выбор услуги → (год/дата партнёра) → текст/PDF.
+        Сценарий: имя → дата рождения → демо → выбор услуги → текст/PDF → (e-mail только при PDF).
       </div>
     </div>
 
@@ -332,7 +340,7 @@
 
       <div class="card">
         <h3>Важно</h3>
-        <p>Демо генерируется через Cloudflare Worker (<code>/demo</code>). Полные услуги — через <code>/service</code>.</p>
+        <p>Демо генерируется через Cloudflare Worker (<code>/demo</code>), консультации — через <code>/service</code>.</p>
         <div class="warn">
           Если открыть <code>/demo</code> в браузере — это GET и будет “Not found”. Демо работает POST-запросом из сайта.
         </div>
@@ -342,23 +350,21 @@
 </div>
 
 <script>
-  // === ВАЖНО: проверь домен воркера ===
-  const API_BASE = "https://numerology-api.kseniabarzali.workers.dev";
+  // === Настройка ===
+  const API_BASE = "https://numerology-api.kseniabarzali.workers.dev"; // проверь домен воркера
 
-  // === State machine ===
-  // ASK_NAME -> ASK_BIRTHDATE -> RUN_DEMO -> CHOOSE_SERVICE -> CHOOSE_FORMAT
-  // (extra) ASK_YEAR / ASK_PARTNER_BIRTHDATE -> (optional) ASK_EMAIL -> RUN_SERVICE -> CHOOSE_SERVICE
+  // === Состояние ===
   const STORAGE_KEY = "lunamatrix_state_v2";
 
-  const DEFAULT_STATE = {
-    stage: "ASK_NAME",
+  const DefaultState = {
+    stage: "ASK_NAME", // ASK_NAME -> ASK_BIRTHDATE -> (run demo) -> CHOOSE_SERVICE -> CHOOSE_FORMAT -> (ASK_YEAR / ASK_PARTNER_BIRTHDATE) -> runServiceText -> CHOOSE_SERVICE
     name: "",
     birthdate: "",
     service: "",          // "prognostics" | "compatibility" | "realization" | "full"
     format: "",           // "text" | "pdf"
-    year: "",             // для прогностики
-    partner_birthdate: "",// для совместимости
-    email: ""             // для PDF
+    year: "",
+    partner_birthdate: "",
+    email: ""
   };
 
   const elMessages = document.getElementById("messages");
@@ -370,11 +376,11 @@
   function loadState(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return {...DEFAULT_STATE};
+      if(!raw) return { ...DefaultState };
       const s = JSON.parse(raw);
-      return {...DEFAULT_STATE, ...s};
+      return { ...DefaultState, ...s };
     }catch(e){
-      return {...DEFAULT_STATE};
+      return { ...DefaultState };
     }
   }
   function saveState(s){
@@ -430,7 +436,6 @@
   }
 
   function addActions(buttons){
-    // buttons: [{label, onClick, primary}]
     const wrap = document.createElement("div");
     wrap.className = "actions";
     buttons.forEach(b=>{
@@ -457,37 +462,26 @@
     const m = (x || "").trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
     return m ? `${m[1]}.${m[2]}.${m[3]}` : "";
   }
+
   function normalizeYear(x){
-    const m = (x || "").trim().match(/^(19\d{2}|20\d{2})$/);
-    return m ? m[1] : "";
-  }
-  function isEmail(x){
-    const s = (x || "").trim().toLowerCase();
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : "";
+    const y = (x || "").trim();
+    return /^\d{4}$/.test(y) ? y : "";
   }
 
   function serviceLabel(svc){
     if(svc === "prognostics") return "Прогностика";
     if(svc === "compatibility") return "Совместимость";
-    if(svc === "realization") return "Реализация / Профессии";
-    if(svc === "full") return "Полный пакет";
-    return "Услуга";
+    if(svc === "realization") return "Деньги / Реализация / Профессии";
+    if(svc === "full") return "Полный пакет (всё сразу)";
+    return "Консультация";
   }
 
-  function resetAll(){
-    localStorage.removeItem(STORAGE_KEY);
-    state = {...DEFAULT_STATE};
-    elMessages.innerHTML = "";
-    setStatus();
-    start();
-  }
-
-  function start(){
-    // чтобы при обновлении страницы не засыпать историю — если уже есть сообщения, не стартуем заново
+  // === Старт ===
+  function startIfEmpty(){
     if(elMessages.children.length > 0) return;
 
     if(state.name && state.birthdate){
-      addRow("bot", `С возвращением, ${state.name}! 💖 Продолжим?`);
+      addRow("bot", `С возвращением, ${state.name}! 💖 Выбирай консультацию ниже.`);
       state.stage = "CHOOSE_SERVICE";
       saveState(state);
       showServiceButtons();
@@ -503,40 +497,92 @@
     setStatus();
   }
 
+  // === Демо ===
   async function runDemo(){
     addTyping();
-    await sleep(350);
+    await sleep(450);
+
     try{
       const resp = await fetch(`${API_BASE}/demo`, {
         method: "POST",
         headers: { "content-type":"application/json" },
         body: JSON.stringify({ name: state.name, birthdate: state.birthdate })
       });
+
       const data = await resp.json().catch(()=> ({}));
       removeTyping();
 
       if(!resp.ok){
-        addRow("bot", `Не смогла получить демо 😔\n${data?.error ? "Ошибка: " + data.error : "Попробуй ещё раз."}`);
+        addRow("bot", `Упс… не смогла получить демо 😔\n${data?.error ? "Ошибка: " + data.error : "Попробуй ещё раз чуть позже."}`);
         return;
       }
 
       addRow("bot", data?.text || "Демо готово ✨");
-      addRow("bot", "Идем дальше💖 Выбирай ниже консультацию");
+      addRow("bot", "Идем дальше 💖 Выбирай ниже консультацию");
       state.stage = "CHOOSE_SERVICE";
       saveState(state);
       showServiceButtons();
     }catch(e){
       removeTyping();
-      addRow("bot", "Сейчас нет связи с сервером 😔 Проверь интернет и попробуй ещё раз.");
+      addRow("bot", "Похоже, сейчас нет связи с сервером 😔 Проверь интернет и попробуй ещё раз.");
     }
   }
 
+  // === Service (консультация) ===
+  async function runServiceText(){
+    addTyping();
+    await sleep(450);
+
+    const payload = {
+      service: state.service,
+      name: state.name,
+      birthdate: state.birthdate,
+      format: "text"
+    };
+
+    if(state.service === "compatibility"){
+      payload.partner_birthdate = state.partner_birthdate;
+    }
+    if(state.service === "prognostics"){
+      payload.year = state.year;
+    }
+
+    try{
+      const resp = await fetch(`${API_BASE}/service`, {
+        method: "POST",
+        headers: { "content-type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await resp.json().catch(()=> ({}));
+      removeTyping();
+
+      if(!resp.ok || data?.ok === false){
+        addRow("bot", `Не смогла сформировать консультацию 😔\n${data?.error ? "Ошибка: " + data.error : "Попробуй ещё раз."}`);
+        state.stage = "CHOOSE_SERVICE";
+        saveState(state);
+        showServiceButtons();
+        return;
+      }
+
+      addRow("bot", data?.text || "Готово ✨");
+      addRow("bot", "Идем дальше 💖 Выбирай ниже консультацию");
+      state.stage = "CHOOSE_SERVICE";
+      saveState(state);
+      showServiceButtons();
+    }catch(e){
+      removeTyping();
+      addRow("bot", "Похоже, сейчас нет связи с сервером 😔 Проверь интернет и попробуй ещё раз.");
+    }
+  }
+
+  // === Кнопки услуг ===
   function showServiceButtons(){
     addActions([
       { label:"🔮 Прогностика", primary:true, onClick:()=>selectService("prognostics") },
       { label:"💞 Совместимость", onClick:()=>selectService("compatibility") },
-      { label:"🧭 Реализация / Профессии", onClick:()=>selectService("realization") },
-      { label:"🔥 Полный пакет", onClick:()=>selectService("full") },
+      { label:"🤑 Деньги / Реализация / Профессии", onClick:()=>selectService("realization") },
+      { label:"🔥 Полный пакет (всё сразу)", onClick:()=>selectService("full") },
     ]);
   }
 
@@ -566,7 +612,6 @@
     saveState(state);
 
     // сначала собираем доп. данные по услуге, потом (если PDF) e-mail, потом runServiceText()
-
     if(state.service === "prognostics"){
       addRow("bot", "Для прогностики укажи год (например 2026)");
       state.stage = "ASK_YEAR";
@@ -581,84 +626,43 @@
       return;
     }
 
-    // realization / full — без доп. данных
     if(fmt === "pdf"){
-      addRow("bot", "Ок 📄 Напиши e-mail (пример: name@gmail.com)");
+      addRow("bot", "Ок 📄 Напиши e-mail для PDF (пример: name@gmail.com)");
       state.stage = "ASK_EMAIL";
       saveState(state);
       return;
     }
 
-    // text
+    // реализация / полный пакет — доп. данных нет
     runServiceText();
   }
 
-  async function runServiceText(){
-    // Если выбран PDF, но PDF-пайплайн ещё не подключен — всё равно выдаём текст (чтобы UX был готов).
-    // Позже заменим на настоящий /pdf.
-
-    addTyping();
-    await sleep(350);
-
-    const payload = {
-      service: state.service,
-      name: state.name,
-      birthdate: state.birthdate,
-      format: "text",
-      year: state.year || undefined,
-      partner_birthdate: state.partner_birthdate || undefined,
-      email: state.email || undefined
-    };
-
-    try{
-      const resp = await fetch(`${API_BASE}/service`, {
-        method: "POST",
-        headers: { "content-type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await resp.json().catch(()=> ({}));
-      removeTyping();
-
-      if(!resp.ok || !data?.ok){
-        addRow("bot", `Не получилось получить результат 😔\n${data?.error ? "Ошибка: " + data.error : "Попробуй ещё раз."}`);
-        state.stage = "CHOOSE_SERVICE";
-        saveState(state);
-        showServiceButtons();
-        return;
-      }
-
-      addRow("bot", data.text || "Готово ✨");
-
-      if(state.format === "pdf"){
-        addRow("bot", `PDF-отправку подключим следующим шагом. E-mail сохранён: ${state.email || "—"}\nСейчас выдала текст, чтобы сценарий работал полностью.`);
-      }
-
-      // дальше снова выбор услуг
-      state.stage = "CHOOSE_SERVICE";
-      saveState(state);
-      showServiceButtons();
-    }catch(e){
-      removeTyping();
-      addRow("bot", "Сейчас нет связи с сервером 😔 Проверь интернет и попробуй ещё раз.");
-    }
-  }
-
+  // === Ввод текста по стадиям ===
   async function handleUserText(text){
     const msg = (text || "").trim();
     if(!msg) return;
 
     addRow("user", msg);
 
+    // 1) имя
     if(state.stage === "ASK_NAME"){
       state.name = msg.split(/\s+/)[0].slice(0, 24);
       saveState(state);
       setStatus();
-      addRow("bot", `Приятно познакомиться, ${state.name}! 💫\nПодскажи дату рождения в формате ДД.ММ.ГГГГ (например, 20.08.1989)`);
+
+      addTyping();
+      await sleep(350);
+      removeTyping();
+
+      addRow("bot",
+`Приятно познакомиться, ${state.name}! 💫
+Подскажи дату рождения в формате ДД.ММ.ГГГГ (например, 20.08.1989)`);
       state.stage = "ASK_BIRTHDATE";
       saveState(state);
       return;
     }
 
+    // 2) дата рождения
     if(state.stage === "ASK_BIRTHDATE"){
       const bd = normalizeBirthdate(msg);
       if(!bd){
@@ -671,26 +675,7 @@
       return;
     }
 
-    if(state.stage === "ASK_YEAR"){
-      const y = normalizeYear(msg);
-      if(!y){
-        addRow("bot", "Год — 4 цифры, например 2026");
-        return;
-      }
-      state.year = y;
-      saveState(state);
-
-      if(state.format === "pdf"){
-        addRow("bot", "Ок 📄 Напиши e-mail (пример: name@gmail.com)");
-        state.stage = "ASK_EMAIL";
-        saveState(state);
-        return;
-      }
-
-      await runServiceText();
-      return;
-    }
-
+    // 3) доп. данные для услуги
     if(state.stage === "ASK_PARTNER_BIRTHDATE"){
       const pbd = normalizeBirthdate(msg);
       if(!pbd){
@@ -701,7 +686,7 @@
       saveState(state);
 
       if(state.format === "pdf"){
-        addRow("bot", "Ок 📄 Напиши e-mail (пример: name@gmail.com)");
+        addRow("bot", "Ок 📄 Теперь напиши e-mail для PDF (пример: name@gmail.com)");
         state.stage = "ASK_EMAIL";
         saveState(state);
         return;
@@ -711,22 +696,49 @@
       return;
     }
 
+    if(state.stage === "ASK_YEAR"){
+      const y = normalizeYear(msg);
+      if(!y){
+        addRow("bot", "Год — 4 цифры 🙂 Например: 2026");
+        return;
+      }
+      state.year = y;
+      saveState(state);
+
+      if(state.format === "pdf"){
+        addRow("bot", "Ок 📄 Теперь напиши e-mail для PDF (пример: name@gmail.com)");
+        state.stage = "ASK_EMAIL";
+        saveState(state);
+        return;
+      }
+
+      await runServiceText();
+      return;
+    }
+
+    // 4) email (PDF)
     if(state.stage === "ASK_EMAIL"){
-      const email = isEmail(msg);
-      if(!email){
-        addRow("bot", "Похоже, e-mail с ошибкой 🙏 Пример: name@gmail.com");
+      const email = msg.toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        addRow("bot", "Похоже, e-mail написан с ошибкой 🙏 Попробуй ещё раз (пример: name@gmail.com)");
         return;
       }
       state.email = email;
+      saveState(state);
+
+      // пока PDF не генерируем — фиксируем e-mail и говорим, что следующий шаг /pdf
+      addRow("bot", `Принято 💌 E-mail: ${email}\nPDF-генерацию подключим отдельным endpoint’ом /pdf (следующий шаг).`);
+
+      // чтобы не ломать сценарий — для сейчас отдадим текст в чат
+      addRow("bot", "Пока выдаю результат текстом здесь 👇");
+      state.format = "text";
       saveState(state);
       await runServiceText();
       return;
     }
 
     // fallback
-    addRow("bot", "Я рядом 🙂 Выбери услугу кнопками ниже.");
-    state.stage = "CHOOSE_SERVICE";
-    saveState(state);
+    addRow("bot", "Я рядом 🙂 Давай по шагам: введи дату рождения или выбери консультацию кнопками ниже.");
     showServiceButtons();
   }
 
@@ -736,17 +748,25 @@
     elInput.value = "";
     handleUserText(v);
   });
+
   elInput.addEventListener("keydown", (e)=>{
     if(e.key === "Enter"){
       e.preventDefault();
       elSend.click();
     }
   });
-  elReset.addEventListener("click", resetAll);
 
-  // === Start ===
+  elReset.addEventListener("click", ()=>{
+    localStorage.removeItem(STORAGE_KEY);
+    state = { ...DefaultState };
+    elMessages.innerHTML = "";
+    setStatus();
+    startIfEmpty();
+  });
+
+  // запуск
   setStatus();
-  start();
+  startIfEmpty();
 </script>
 </body>
 </html>
