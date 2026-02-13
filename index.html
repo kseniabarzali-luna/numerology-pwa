@@ -1,186 +1,650 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Нумерология — демо</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LunaMatrix — Нумеролог-эксперт</title>
+  <meta name="description" content="Персональные демо-ответы и консультации по нумерологии. PDF — после e-mail." />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; background:#0b0f17; color:#fff; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 18px 14px 70px; }
-    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
-    .badge { font-size:12px; opacity:.85; padding:6px 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px; background: rgba(255,255,255,.04); }
-    .card { background:#121a2a; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; }
-    .msgs { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
-    .m { padding:10px 12px; border-radius:14px; max-width: 92%; white-space:pre-wrap; line-height:1.35; }
-    .u { align-self:flex-end; background:#2a3b63; border:1px solid rgba(255,255,255,.12); }
-    .a { align-self:flex-start; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); }
-    .bar { position: fixed; left:0; right:0; bottom:0; background: rgba(11,15,23,.9); backdrop-filter: blur(10px); border-top:1px solid rgba(255,255,255,.08); }
-    .bar .inner { max-width: 720px; margin: 0 auto; padding: 10px 14px; display:flex; gap:10px; }
-    input { flex:1; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.15); background:#0b1220; color:#fff; }
-    button { padding:12px 14px; border-radius:12px; border:0; background:#4f7cff; color:#fff; font-weight:600; cursor:pointer; }
-    button.secondary { background:#27324b; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-    .hint { font-size:12px; opacity:.75; margin-top:8px; }
-    /* modal */
-    .overlay { position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:16px; }
-    .modal { width:min(520px, 100%); background:#121a2a; border:1px solid rgba(255,255,255,.10); border-radius:16px; padding:14px; }
-    .modal h3 { margin:0 0 8px; font-size:16px; }
-    .msg { margin-top:10px; padding:10px 12px; border-radius:12px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); }
-    a { color:#9bb6ff; }
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1020;
+      --card:#0E1630cc;
+      --stroke:#223055;
+      --text:#EAF0FF;
+      --muted:#AAB6DA;
+      --accent:#6B8CFF;
+      --accent2:#B06BFF;
+      --good:#31D0AA;
+      --warn:#FFB020;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+      --radius: 18px;
+      --radius2: 24px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 70% -10%, rgba(107,140,255,.25), transparent 60%),
+        radial-gradient(900px 700px at 10% 10%, rgba(176,107,255,.20), transparent 55%),
+        radial-gradient(700px 600px at 70% 110%, rgba(49,208,170,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+    .wrap{
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px 14px;
+    }
+    .app{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:18px;
+    }
+    @media (max-width: 920px){
+      .app{grid-template-columns:1fr}
+    }
+    .hero{
+      border:1px solid rgba(255,255,255,.06);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      border-radius: var(--radius2);
+      padding:22px 22px 18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(400px 260px at 20% 20%, rgba(107,140,255,.25), transparent 60%),
+        radial-gradient(420px 300px at 90% 0%, rgba(176,107,255,.22), transparent 60%);
+      filter: blur(10px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .hero > *{position:relative}
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      margin-bottom:10px;
+    }
+    .logo{
+      width:46px; height:46px;
+      border-radius:14px;
+      display:grid; place-items:center;
+      background: linear-gradient(135deg, rgba(107,140,255,.95), rgba(176,107,255,.9));
+      box-shadow: 0 12px 30px rgba(107,140,255,.25);
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .logo span{font-size:22px; transform: translateY(-1px)}
+    .title{
+      line-height:1.1;
+    }
+    .title h1{margin:0; font-size:20px; letter-spacing:.2px}
+    .title p{margin:4px 0 0; color:var(--muted); font-size:13px}
+    .chips{
+      display:flex; flex-wrap:wrap; gap:8px;
+      margin:14px 0 0;
+    }
+    .chip{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(14,22,48,.55);
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .chat{
+      border:1px solid rgba(255,255,255,.07);
+      background: rgba(14,22,48,.45);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height: 560px;
+    }
+    .chat-head{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .status{
+      display:flex; align-items:center; gap:8px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background: var(--good);
+      box-shadow: 0 0 0 6px rgba(49,208,170,.12);
+    }
+    .pill{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.15);
+      color:var(--muted);
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill:hover{border-color:rgba(107,140,255,.35); color:var(--text)}
+    .messages{
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      overflow:auto;
+      flex:1;
+    }
+    .row{
+      display:flex;
+      align-items:flex-end;
+      gap:8px;
+      max-width: 92%;
+    }
+    .row.user{margin-left:auto; flex-direction:row-reverse}
+    .bubble{
+      padding:12px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.15);
+      white-space:pre-wrap;
+      line-height:1.35;
+      font-size:14px;
+    }
+    .row.bot .bubble{
+      background: rgba(14,22,48,.70);
+      border-color: rgba(255,255,255,.10);
+    }
+    .row.user .bubble{
+      background: linear-gradient(135deg, rgba(107,140,255,.30), rgba(176,107,255,.22));
+      border-color: rgba(107,140,255,.35);
+    }
+    .meta{
+      font-size:11px; color:rgba(170,182,218,.75);
+      margin:0 4px;
+    }
+    .typing{
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .typing i{
+      width:6px;height:6px;border-radius:50%;
+      background: rgba(234,240,255,.65);
+      display:inline-block;
+      animation: bounce 1.1s infinite ease-in-out;
+    }
+    .typing i:nth-child(2){animation-delay:.15s}
+    .typing i:nth-child(3){animation-delay:.30s}
+    @keyframes bounce{
+      0%,80%,100%{transform:translateY(0); opacity:.55}
+      40%{transform:translateY(-4px); opacity:1}
+    }
+
+    .composer{
+      padding:12px 12px;
+      border-top:1px solid rgba(255,255,255,.08);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      background: rgba(0,0,0,.10);
+    }
+    .input{
+      flex:1;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(14,22,48,.55);
+      border-radius: 14px;
+      padding:10px 12px;
+    }
+    input{
+      width:100%;
+      background:transparent;
+      border:0;
+      outline:none;
+      color:var(--text);
+      font-size:14px;
+    }
+    input::placeholder{color:rgba(170,182,218,.65)}
+    .btn{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(107,140,255,.18);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:14px;
+    }
+    .btn:hover{border-color:rgba(107,140,255,.55); background: rgba(107,140,255,.26)}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+    .btn.secondary{
+      background: rgba(0,0,0,.12);
+    }
+    .btn.secondary:hover{
+      border-color:rgba(255,255,255,.20);
+      background: rgba(0,0,0,.20);
+    }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+    }
+    .kbtn{
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(14,22,48,.55);
+      cursor:pointer;
+      color:var(--text);
+      font-size:13px;
+      user-select:none;
+    }
+    .kbtn:hover{border-color:rgba(107,140,255,.45)}
+    .kbtn.primary{
+      background: rgba(107,140,255,.20);
+      border-color: rgba(107,140,255,.35);
+    }
+    .small{
+      font-size:12px;
+      color:rgba(170,182,218,.78);
+      margin-top:10px;
+      line-height:1.35;
+    }
+    .right{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .card{
+      border:1px solid rgba(255,255,255,.07);
+      background: rgba(14,22,48,.35);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+      padding:18px;
+    }
+    .card h3{margin:0 0 8px; font-size:16px}
+    .card p{margin:0; color:var(--muted); font-size:13px; line-height:1.45}
+    .warn{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,176,32,.25);
+      background: rgba(255,176,32,.08);
+      color:rgba(255,224,170,.95);
+      font-size:12px;
+      line-height:1.35;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div style="font-size:18px; font-weight:700;">Нумеролог-эксперт</div>
-        <div class="hint">Демо бесплатно. PDF и покупки — после ввода e-mail.</div>
-      </div>
-      <div id="authBadge" class="badge">Гость</div>
-    </div>
-
-    <div class="card">
-      <div class="actions">
-        <button id="demoBtn" class="secondary">Получить демо-ответ</button>
-        <button id="pdfBtn">Сформировать PDF (нужен e-mail)</button>
-        <button id="loginBtn" class="secondary" style="display:none;">Войти по e-mail</button>
-        <button id="logoutBtn" class="secondary" style="display:none;">Выйти</button>
-      </div>
-
-      <div id="msgs" class="msgs"></div>
-      <div class="hint">Подсказка: напиши дату рождения, например <b>20.08.1989</b> и что хочешь узнать.</div>
-    </div>
-  </div>
-
-  <!-- bottom input -->
-  <div class="bar">
-    <div class="inner">
-      <input id="text" placeholder="Напишите сообщение…" />
-      <button id="send">Отправить</button>
-    </div>
-  </div>
-
-  <!-- modal email -->
-  <div id="overlay" class="overlay">
-    <div class="modal">
-      <h3>Введите e-mail для PDF</h3>
-      <div class="hint">Мы пришлём ссылку для входа (без пароля). После подтверждения откроются ваши отчёты и PDF.</div>
-      <div style="margin-top:10px;">
-        <input id="email" type="email" placeholder="you@example.com" autocomplete="email"/>
-        <div class="actions" style="margin-top:10px;">
-          <button id="sendLink">Отправить ссылку</button>
-          <button id="close" class="secondary">Отмена</button>
+<div class="wrap">
+  <div class="app">
+    <div class="hero">
+      <div class="brand">
+        <div class="logo"><span>🌙</span></div>
+        <div class="title">
+          <h1>Нумеролог-эксперт LunaMatrix</h1>
+          <p>Демо бесплатно. PDF и покупки — после e-mail.</p>
         </div>
-        <div id="modalMsg" class="msg" style="display:none;"></div>
+      </div>
+
+      <div class="chips">
+        <div class="chip">✨ Персональный демо-ответ</div>
+        <div class="chip">💞 Совместимость</div>
+        <div class="chip">🤑 Деньги / Реализация / Профессии</div>
+        <div class="chip">🔮 Прогностика 2026</div>
+        <div class="chip">🔥 Полный пакет</div>
+      </div>
+
+      <div class="small">
+        Сценарий: знакомство → дата рождения → демо → выбор услуги → PDF/текст → e-mail (только при PDF).
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="chat" id="chat">
+        <div class="chat-head">
+          <div class="status">
+            <span class="dot"></span>
+            <span id="statusText">Гость</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div class="pill" id="resetBtn">Сброс</div>
+          </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="composer">
+          <div class="input">
+            <input id="textInput" placeholder="Напишите сообщение…" autocomplete="off"/>
+          </div>
+          <button class="btn" id="sendBtn">Отправить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Важно</h3>
+        <p>Пока демо генерируется через Cloudflare Worker (<code>/demo</code>). PDF-генерацию можно добавить следующим шагом отдельным endpoint’ом (<code>/pdf</code>).</p>
+        <div class="warn">
+          Если открыть <code>/demo</code> в браузере — это GET и будет “Not found”. Демо работает POST-запросом из сайта.
+        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+<script>
+  // === Настройка ===
+  const API_BASE = "https://numerology-api.kseniabarzali.workers.dev"; // <-- проверь домен воркера
 
-    const SUPABASE_URL = "https://wceramzbrsvlyemngqye.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZXJhbXpicnN2bHllbW5ncXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDgxNzUsImV4cCI6MjA4NjQ4NDE3NX0.vIpHdkuyLEJYtg-FYjd-zfDarXkjgFILpKJyi9Sc2zs";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // === Состояние ===
+  const STORAGE_KEY = "lunamatrix_state_v1";
+  const State = {
+    stage: "ASK_NAME", // ASK_NAME -> ASK_BIRTHDATE -> DEMO -> CHOOSE_SERVICE -> CHOOSE_FORMAT -> ASK_EMAIL(optional)
+    name: "",
+    birthdate: "",
+    service: "",
+    format: "", // "TEXT" or "PDF"
+  };
 
-    const el = (id) => document.getElementById(id);
-    const msgs = el("msgs");
+  const elMessages = document.getElementById("messages");
+  const elInput = document.getElementById("textInput");
+  const elSend = document.getElementById("sendBtn");
+  const elReset = document.getElementById("resetBtn");
+  const elStatus = document.getElementById("statusText");
 
-    const addMsg = (role, text) => {
-      const d = document.createElement("div");
-      d.className = "m " + (role === "user" ? "u" : "a");
-      d.textContent = text;
-      msgs.appendChild(d);
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    };
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return {...State};
+      const s = JSON.parse(raw);
+      return {...State, ...s};
+    }catch(e){
+      return {...State};
+    }
+  }
+  function saveState(s){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  }
+  let state = loadState();
 
-    // Простая демо-логика (пока без OpenAI). Следующим шагом подключим Worker.
-    const demoAnswer = (question) => {
-      return [
-        "ДЕМО-ОТВЕТ (пример):",
-        "• Вижу запрос: " + (question || "общий разбор"),
-        "• Могу сделать: личность, деньги/реализация, совместимость, прогнозы.",
-        "• Для полного разбора нужен PDF — там будет структура, рекомендации и ключевые периоды.",
-        "",
-        "Напишите дату рождения и тему (например: «20.08.1989 — деньги и профессии»)."
-      ].join("\n");
-    };
+  function setStatus(){
+    elStatus.textContent = state.name ? state.name : "Гость";
+  }
 
-    const setAuthUI = async () => {
-      const { data } = await supabase.auth.getSession();
-      const s = data.session;
-      el("authBadge").textContent = s ? ("Вход: " + (s.user.email || "ok")) : "Гость";
-      el("loginBtn").style.display = s ? "none" : "inline-block";
-      el("logoutBtn").style.display = s ? "inline-block" : "none";
-    };
+  // === UI helpers ===
+  function timeStr(){
+    const d = new Date();
+    return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  }
 
-    await setAuthUI();
-    supabase.auth.onAuthStateChange(() => setAuthUI());
+  function addRow(who, text, meta=true){
+    const row = document.createElement("div");
+    row.className = "row " + (who === "user" ? "user" : "bot");
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    row.appendChild(bubble);
 
-    // Buttons
-    el("demoBtn").onclick = () => addMsg("assistant", demoAnswer());
-
-    // PDF button: если не залогинен — просим email
-    el("pdfBtn").onclick = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        el("overlay").style.display = "flex";
-        el("modalMsg").style.display = "none";
-        return;
-      }
-      addMsg("assistant", "Ок, вы авторизованы. Дальше подключим генерацию PDF через сервер.");
-    };
-
-    el("close").onclick = () => el("overlay").style.display = "none";
-
-    // Отправка magic link
-    el("sendLink").onclick = async () => {
-      const email = el("email").value.trim();
-      if (!email) return showModal("Введите e-mail", true);
-
-      el("sendLink").disabled = true;
-      try {
-        // ВАЖНО: redirectTo должен быть твоим Pages доменом (чтобы после клика в письме вернуло на сайт)
-        const redirectTo = window.location.origin;
-        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo }});
-        if (error) throw error;
-        showModal("Ссылка отправлена. Откройте письмо и нажмите Confirm/Sign in.", false);
-      } catch (e) {
-        showModal("Ошибка отправки: " + (e?.message || e), true);
-      } finally {
-        el("sendLink").disabled = false;
-      }
-    };
-
-    function showModal(text, isErr) {
-      const m = el("modalMsg");
-      m.style.display = "block";
-      m.style.borderColor = isErr ? "rgba(255,99,99,.5)" : "rgba(79,124,255,.5)";
-      m.textContent = text;
+    if(meta){
+      const m = document.createElement("div");
+      m.className = "meta";
+      m.textContent = timeStr();
+      row.appendChild(m);
     }
 
-    el("loginBtn").onclick = () => { el("overlay").style.display = "flex"; };
+    elMessages.appendChild(row);
+    elMessages.scrollTop = elMessages.scrollHeight;
+  }
 
-    el("logoutBtn").onclick = async () => {
-      await supabase.auth.signOut();
-      addMsg("assistant", "Вы вышли. Демо остаётся доступно без входа.");
-    };
+  function addTyping(){
+    const row = document.createElement("div");
+    row.className = "row bot";
+    row.dataset.typing = "1";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    const t = document.createElement("span");
+    t.className = "typing";
+    t.innerHTML = "<i></i><i></i><i></i>";
+    bubble.appendChild(t);
+    row.appendChild(bubble);
+    elMessages.appendChild(row);
+    elMessages.scrollTop = elMessages.scrollHeight;
+  }
+  function removeTyping(){
+    const t = elMessages.querySelector('[data-typing="1"]');
+    if(t) t.remove();
+  }
 
-    // chat input (пока локально)
-    el("send").onclick = () => {
-      const t = el("text").value.trim();
-      if (!t) return;
-      addMsg("user", t);
-      el("text").value = "";
-      addMsg("assistant", demoAnswer(t));
-    };
-
-    el("text").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") el("send").click();
+  function addActions(buttons){
+    // buttons: [{label, onClick, primary}]
+    const wrap = document.createElement("div");
+    wrap.className = "actions";
+    buttons.forEach(b=>{
+      const btn = document.createElement("div");
+      btn.className = "kbtn" + (b.primary ? " primary" : "");
+      btn.textContent = b.label;
+      btn.addEventListener("click", b.onClick);
+      wrap.appendChild(btn);
     });
 
-    addMsg("assistant", "Привет! Я нумеролог-эксперт. Напишите дату рождения и тему — дам демо-ответ. PDF будет доступен после e-mail.");
-  </script>
+    const row = document.createElement("div");
+    row.className = "row bot";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.appendChild(wrap);
+    row.appendChild(bubble);
+    elMessages.appendChild(row);
+    elMessages.scrollTop = elMessages.scrollHeight;
+  }
+
+  function normalizeBirthdate(x){
+    // ждём формат ДД.ММ.ГГГГ
+    const m = (x || "").trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    return m ? `${m[1]}.${m[2]}.${m[3]}` : "";
+  }
+
+  // === Сценарий ===
+  function startIfEmpty(){
+    if(elMessages.children.length > 0) return;
+
+    // Если уже есть имя и дата — покажем сервисы
+    if(state.name && state.birthdate){
+      addRow("bot", `С возвращением, ${state.name}! 💖 Хочешь продолжить?`);
+      showServiceButtons();
+      state.stage = "CHOOSE_SERVICE";
+      saveState(state);
+      setStatus();
+      return;
+    }
+
+    // Первый запуск
+    addRow("bot",
+`Привет ✨🌙✨ Я твой персональный помощник LunaMatrix 💖
+Тут я тебе раскрою всю правду о тебе, дам рекомендации, как вывести свою жизнь в плюс.
+Как я могу к тебе обращаться?`);
+    state.stage = "ASK_NAME";
+    saveState(state);
+    setStatus();
+  }
+
+  async function handleUserText(text){
+    const msg = (text || "").trim();
+    if(!msg) return;
+
+    addRow("user", msg);
+
+    if(state.stage === "ASK_NAME"){
+      state.name = msg.split(/\s+/)[0].slice(0, 24); // коротко и аккуратно
+      saveState(state);
+      setStatus();
+
+      addTyping();
+      await sleep(450);
+      removeTyping();
+
+      addRow("bot",
+`Приятно познакомиться, ${state.name}! 💫
+Чтобы я мог тебе помочь, подскажи свою дату рождения в формате ДД.ММ.ГГГГ (например, 20.08.1989)`);
+      state.stage = "ASK_BIRTHDATE";
+      saveState(state);
+      return;
+    }
+
+    if(state.stage === "ASK_BIRTHDATE"){
+      const bd = normalizeBirthdate(msg);
+      if(!bd){
+        addRow("bot", "Хочу точнее 🙂 Напиши дату в формате ДД.ММ.ГГГГ, например 20.08.1989");
+        return;
+      }
+      state.birthdate = bd;
+      saveState(state);
+
+      await runDemo(); // авто демо
+      return;
+    }
+
+    if(state.stage === "ASK_EMAIL"){
+      const email = msg.toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        addRow("bot", "Похоже, e-mail написан с ошибкой 🙏 Попробуй ещё раз (пример: name@gmail.com)");
+        return;
+      }
+      // Здесь пока только подтверждаем. На следующем шаге подключим /pdf
+      addRow("bot", `Отлично! 💌 Сохранила e-mail: ${email}\nСледующий шаг — подключить генерацию PDF и отправку на почту.`);
+      state.stage = "CHOOSE_SERVICE";
+      state.format = "";
+      saveState(state);
+      showServiceButtons();
+      return;
+    }
+
+    // Если пользователь пишет не по сценарию — мягко возвращаем
+    addRow("bot", "Я рядом 🙂 Давай по шагам: напиши дату рождения или выбери консультацию кнопками ниже.");
+    showServiceButtons();
+  }
+
+  async function runDemo(){
+    addTyping();
+    await sleep(500);
+
+    try{
+      const resp = await fetch(`${API_BASE}/demo`, {
+        method: "POST",
+        headers: { "content-type":"application/json" },
+        body: JSON.stringify({ name: state.name, birthdate: state.birthdate })
+      });
+      const data = await resp.json().catch(()=> ({}));
+      removeTyping();
+
+      if(!resp.ok){
+        addRow("bot", `Упс… не смогла получить демо 😔\n${data?.error ? "Ошибка: " + data.error : "Попробуй ещё раз чуть позже."}`);
+        return;
+      }
+
+      const text = data?.text || "Демо готово ✨";
+      addRow("bot", text);
+
+      addRow("bot", "Идем дальше💖 Выбирай ниже консультацию");
+      state.stage = "CHOOSE_SERVICE";
+      saveState(state);
+
+      showServiceButtons();
+    }catch(e){
+      removeTyping();
+      addRow("bot", "Похоже, сейчас нет связи с сервером 😔 Проверь интернет и попробуй ещё раз.");
+    }
+  }
+
+  function showServiceButtons(){
+    addActions([
+      { label:"🔮 Прогностика на 2026 год", primary:true, onClick:()=>selectService("Прогностика на 2026 год") },
+      { label:"💞 Совместимость", onClick:()=>selectService("Совместимость") },
+      { label:"🤑 Деньги / Реализация / Профессии", onClick:()=>selectService("Деньги / Реализация / Профессии") },
+      { label:"🔥 Полный пакет (всё сразу)", onClick:()=>selectService("Полный пакет") },
+    ]);
+  }
+
+  function selectService(service){
+    state.service = service;
+    state.stage = "CHOOSE_FORMAT";
+    saveState(state);
+
+    addRow("bot", `Отлично, ${state.name || "дорогая"} 💖 Выбрано: **${service}**.\nКак тебе удобнее получить результат?`, false);
+    // markdown ** не рендерим, поэтому просто текст:
+    elMessages.lastChild.querySelector(".bubble").textContent =
+      `Отлично, ${state.name || "дорогая"} 💖 Выбрано: ${service}.\nКак тебе удобнее получить результат?`;
+
+    addActions([
+      { label:"📄 PDF (нужен e-mail)", primary:true, onClick:()=>chooseFormat("PDF") },
+      { label:"💬 Текст в чате", onClick:()=>chooseFormat("TEXT") },
+    ]);
+  }
+
+  async function chooseFormat(fmt){
+    state.format = fmt;
+    saveState(state);
+
+    if(fmt === "TEXT"){
+      addTyping();
+      await sleep(450);
+      removeTyping();
+      addRow("bot", "Ок 💬 Тогда выдаю текст прямо здесь.\n(Следующий шаг: сделать endpoint /service, который формирует полноценную консультацию по выбранной услуге.)");
+      // Для текста пока: можно сразу запускать тот же /demo, или позже добавить /service.
+      // Здесь оставим как маркер следующего шага.
+      state.stage = "CHOOSE_SERVICE";
+      saveState(state);
+      showServiceButtons();
+      return;
+    }
+
+    // PDF — спрашиваем email
+    addRow("bot", "Супер 📄 Напиши e-mail, куда отправить PDF (пример: name@gmail.com)");
+    state.stage = "ASK_EMAIL";
+    saveState(state);
+  }
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  // === Events ===
+  elSend.addEventListener("click", ()=>{
+    const v = elInput.value;
+    elInput.value = "";
+    handleUserText(v);
+  });
+  elInput.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){
+      e.preventDefault();
+      elSend.click();
+    }
+  });
+  elReset.addEventListener("click", ()=>{
+    localStorage.removeItem(STORAGE_KEY);
+    state = {...State};
+    elMessages.innerHTML = "";
+    setStatus();
+    startIfEmpty();
+  });
+
+  // старт
+  setStatus();
+  startIfEmpty();
+</script>
 </body>
 </html>
