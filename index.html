@@ -616,16 +616,21 @@
   }
 
   function selectService(serviceKey){
-    state.serviceKey = serviceKey;
-    state.format = "";
-    saveState(state);
+  state.serviceKey = serviceKey;
+  state.format = "";
 
-    addRow("bot", `Выбрано: ${serviceLabel(serviceKey)}.\nКак удобнее получить результат?`, false);
-    addActions([
-      { label:"💬 Текст в чате", primary:true, onClick:()=>chooseFormat("text") },
-      { label:"📄 PDF (нужен e-mail)", onClick:()=>chooseFormat("pdf") },
-    ]);
-  }
+  // ВАЖНО: чистим “чужие” поля при смене услуги
+  if(serviceKey !== "compatibility") state.partner_birthdate = "";
+  if(serviceKey !== "prognostics") state.year = "";
+
+  saveState(state);
+
+  addRow("bot", `Выбрано: ${serviceLabel(serviceKey)}.\nКак удобнее получить результат?`, false);
+  addActions([
+    { label:"💬 Текст в чате", primary:true, onClick:()=>chooseFormat("text") },
+    { label:"📄 PDF (нужен e-mail)", onClick:()=>chooseFormat("pdf") },
+  ]);
+}
 
   async function chooseFormat(fmt){
     state.format = fmt;
@@ -662,8 +667,12 @@
       birthdate: state.birthdate,
       format: "text",
     };
-    if(state.partner_birthdate) payload.partner_birthdate = state.partner_birthdate;
-    if(state.year) payload.year = state.year;
+    if(state.serviceKey === "compatibility" && state.partner_birthdate){
+  payload.partner_birthdate = state.partner_birthdate;
+}
+if(state.serviceKey === "prognostics" && state.year){
+  payload.year = state.year;
+}
 
     addTyping(); await sleep(450);
 
