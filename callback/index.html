@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LunaMatrix — callback</title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#0b1020; color:#eaf0ff;}
+    .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+    .card{max-width:720px;width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      border-radius:18px; padding:18px 18px; box-shadow:0 20px 60px rgba(0,0,0,.55);}
+    h1{margin:0 0 8px; font-size:18px;}
+    p{margin:6px 0; color:rgba(234,240,255,.78); line-height:1.45}
+    code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px;}
+    .ok{margin-top:10px; padding:10px 12px; border-radius:14px;
+      background:rgba(49,208,170,.12); border:1px solid rgba(49,208,170,.25); color:#cffff3;}
+    .warn{margin-top:10px; padding:10px 12px; border-radius:14px;
+      background:rgba(255,176,32,.10); border:1px solid rgba(255,176,32,.25); color:#ffe0aa;}
+    .small{font-size:12px;color:rgba(170,182,218,.75)}
+    .btn{margin-top:12px; display:inline-block; padding:10px 12px; border-radius:14px;
+      border:1px solid rgba(107,140,255,.35); background:rgba(107,140,255,.18); color:#eaf0ff; text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Готово ✅ Возвращаемся в LunaMatrix</h1>
+      <p>Эта страница принимает параметры авторизации (<code>#access_token</code> / <code>?code</code>) и отправляет тебя обратно на сайт.</p>
+      <div id="status" class="ok">Обрабатываю…</div>
+      <p class="small" id="debug"></p>
+      <a class="btn" href="/">На главную</a>
+    </div>
+  </div>
+
+<script>
+  // Сюда складываем все параметры (и из query, и из hash)
+  function parseParams() {
+    const out = {};
+
+    // ?a=b&c=d
+    const q = new URLSearchParams(location.search);
+    for (const [k,v] of q.entries()) out[k] = v;
+
+    // #access_token=...&refresh_token=...
+    const h = (location.hash || "").replace(/^#/, "");
+    const hp = new URLSearchParams(h);
+    for (const [k,v] of hp.entries()) out[k] = v;
+
+    return out;
+  }
+
+  const params = parseParams();
+
+  // Сохраним на всякий случай (если потом захочешь забрать на главной)
+  try {
+    localStorage.setItem("lunamatrix_callback_params", JSON.stringify(params));
+  } catch(e) {}
+
+  const statusEl = document.getElementById("status");
+  const debugEl = document.getElementById("debug");
+
+  const hasSomething = Object.keys(params).length > 0;
+
+  if (hasSomething) {
+    statusEl.textContent = "Данные получены ✅ Сейчас перекину на главную…";
+    debugEl.textContent = "Получено: " + Object.keys(params).join(", ");
+  } else {
+    statusEl.className = "warn";
+    statusEl.textContent = "Параметров нет. Если ты открыла /callback вручную — это нормально.";
+    debugEl.textContent = "";
+  }
+
+  // Переход на главную через 1 секунду
+  setTimeout(() => {
+    // Можно поставить конкретно / если главная — index.html
+    location.replace("/");
+  }, 1000);
+</script>
+</body>
+</html>
